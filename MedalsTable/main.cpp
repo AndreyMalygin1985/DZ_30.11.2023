@@ -1,5 +1,8 @@
 ﻿#include <iostream>
 #include <cassert>
+#include <string>
+
+using namespace std;
 
 // Реализуйте в классе MedalsTable из примера 18 метод пакета урока 
 // 4ре возможность динамически задавать размер таблицы медалей.
@@ -7,7 +10,7 @@
 // на 10 элементов.
 // Замените его на динамически выделяемый массив.
 // Для класса MedalsTable реализуйте семантику копирования 
-// и семантику перемещния(две пары конструктор / оператор присваивания).
+// и семантику перемещения(две пары конструктор / оператор присваивания).
 
 class MedalRow
 {
@@ -49,44 +52,66 @@ public:
 	}
 	void print()const
 	{
-		std::cout << '[' << country << "]-( ";
+		cout << '[' << country << "]-( ";
 		for (int i{ 0 }; i < 3; ++i)
 		{
-			std::cout << medals[i];
-			if (i < 2) { std::cout << '\t'; }
+			cout << medals[i];
+			if (i < 2) { cout << '\t'; }
 		}
-		std::cout << " )\n";
+		cout << " )\n";
 	}
 };
 class MedalsTable
 {
-public:
-	const static int maxSize{10};
-	//int const* maize = new int[strlen(MedalsTable::maxSize) +1];
-//private:
-public:
-	MedalsTable() : size{ 0 } {};
-	//MedalsTable(int SizeOfMax)
-	//{
-	//	maxSize = SizeOfMax;
-	//	int* Matrix = new int [SizeOfMax];
-	//};
-
-	MedalRow medalRows[MedalsTable::maxSize];
 	int size;
+	int maxSize;
+	MedalRow* medalRows;
+
 	int findCountry(const char* country)const
 	{
 		for (int i{ 0 }; i < size; ++i)
 		{
-			if (strcmp(medalRows[i].getCountry(),
-				country) == 0)
+			if (strcmp(medalRows[i].getCountry(), country) == 0)
 			{
 				return i;
 			}
 		}
 		return -1;
 	}
+public:
+	
+	MedalsTable() : size{ 0 }, maxSize{ 10 }, medalRows(new MedalRow[maxSize]) {}
 
+	MedalsTable(const MedalsTable& other) : size{ other.size }, maxSize{ other.maxSize }, medalRows(new MedalRow[maxSize])
+	{
+		for (int i = 0; i < size; ++i)
+		{
+			medalRows[i] = other.medalRows[i];
+		}
+	}
+
+	MedalsTable& operator=(const MedalsTable& other)
+	{
+		if (this != &other)
+		{
+			delete[] medalRows;
+			size = other.size;
+			maxSize = other.maxSize;
+			medalRows = new MedalRow[maxSize];
+			for (int i = 0; i < size; ++i)
+			{
+				medalRows[i] = other.medalRows[i];
+			}
+		}
+		return *this;
+	}
+
+	MedalsTable(MedalsTable&& other) noexcept : size{ other.size }, maxSize{ other.maxSize }, medalRows{ other.medalRows }
+	{
+		other.size = 0;
+		other.maxSize = 0;
+		other.medalRows = nullptr;
+	}
 	MedalRow& operator[](const char* country)
 	{
 		int idx{ findCountry(country) };
@@ -113,29 +138,55 @@ public:
 			medalRows[i].print();
 		}
 	}
+
+	MedalsTable& operator=(MedalsTable&& other) noexcept
+	{
+		if (this != &other)
+		{
+			delete[] medalRows;
+			size = other.size;
+			maxSize = other.maxSize;
+			medalRows = other.medalRows;
+
+			other.size = 0;
+			other.maxSize = 0;
+			other.medalRows = nullptr;
+		}
+		return *this;
+	}
+
+	~MedalsTable()
+	{
+		delete[] medalRows;
+	}
+
+	void resize(int newSize)
+	{
+		MedalRow* temp = new MedalRow[newSize];
+		for (int i = 0; i < newSize && i < size; ++i)
+		{
+			temp[i] = medalRows[i];
+		}
+		delete[] medalRows;
+		medalRows = temp;
+		maxSize = newSize;
+	}	
 };
 
 int main()
 {
 	MedalsTable mt1;
-	std::cout << "Medals table #1:\n";
-	mt1["UKR"][MedalRow::GOLD] = 14;
-	mt1["UKR"][MedalRow::SILVER] = 5;
-	mt1["HUN"][MedalRow::BRONZE] = 9;
-	mt1["HUN"][MedalRow::GOLD] = 7;
-	mt1["POL"][MedalRow::GOLD] = 4;
-	mt1["POL"][MedalRow::SILVER] = 2;
+	cout << "Medals table #1:\n";
+	mt1["UKR"][MedalRow::GOLD] = 1;
+	mt1["UKR"][MedalRow::SILVER] = 2;
+	mt1["HUN"][MedalRow::BRONZE] = 3;
+	mt1["HUN"][MedalRow::GOLD] = 4;
+	mt1["POL"][MedalRow::GOLD] = 5;
+	mt1["POL"][MedalRow::SILVER] = 6;
 	mt1.print();
-	// создаем константную копию таблицы №1
-	std::cout << "\nMedals table #2:\n";
+	cout << "\nMedals table #2:\n";
 	const MedalsTable mt2{ mt1 };
 	mt2.print();
-
-	char str[] = "I love 123";
-	int len = strlen(str); std::cout << " Length of the string : " << len << std::endl;
-	// раскомментировав следующую строку можно протестировать
-	// проверку отсутствия страны в константной таблице
-	// медалей
-	// программа аварийно завершиться, что нормально!
-	// mt2["SLO"].print();
+	
+	return 0;
 }
